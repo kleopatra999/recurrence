@@ -1,0 +1,6 @@
+#version = 1
+EventDefinition	aa	My event\ncomplete with\ttabs, newlines, and \\slashes	0
+EventDefinition	ab	A recurring event.	0	0	weekly
+EventOccurrence	ab	0	false
+EventOccurrence	ab	1	false
+EventOccurrence	ab	2	true
