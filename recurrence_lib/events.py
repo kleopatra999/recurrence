@@ -20,6 +20,20 @@ EVENT_PERIOD_MONTHLY = 'monthly'
 EVENT_PERIOD_YEARLY = 'yearly'
 
 
+class InvalidEventRecurrencePeriod(Exception): pass
+
+def period_to_string(s):
+  if s == EVENT_PERIOD_YEARLY or \
+     s == EVENT_PERIOD_MONTHLY or \
+     s == EVENT_PERIOD_WEEKLY:
+    return s
+  else:
+    raise InvalidEventRecurrencePeriod()
+
+
+period_from_string = period_to_string
+
+
 class EventRecurrence:
   """Describes the recurrence pattern used by an EventDescription object."""
   
@@ -37,10 +51,14 @@ class EventRecurrence:
     return self.period
 
   def set_until_date(self, until_date):
-    self.until_date = date
+    self.until_date = until_date
 
   def get_until_date(self):
     return self.until_date
+
+  def __eq__(self, other):
+    return self.until_date == other.until_date and \
+           self.period == other.period
 
 
 class EventDefinition:
@@ -56,7 +74,7 @@ class EventDefinition:
   def set_uuid(self, uuid):
     self.uuid = uuid
 
-  def get_id(self):
+  def get_uuid(self):
     return self.uuid
 
   def set_description(self, description):
@@ -79,6 +97,12 @@ class EventDefinition:
   def get_recurrence(self):
     return self.recurrence
 
+  def __eq__(self, other):
+    return self.uuid == other.uuid and \
+           self.description == other.description and \
+           self.start_date == other.start_date and \
+           self.recurrence == other.recurrence
+
 
 class EventOccurrence:
   """A single occurrence of an event."""
@@ -89,7 +113,7 @@ class EventOccurrence:
     self.cleared = None
 
   def set_definition(self, definition):
-    assert definition is None or isinstance(recurrence, EventDefinition)
+    assert definition is None or isinstance(definition, EventDefinition)
     self.definition = definition
 
   def get_definition(self):
@@ -103,7 +127,12 @@ class EventOccurrence:
 
   def set_cleared(self, cleared):
     assert cleared is None or type(cleared) == type(True)
-    self.cleared = cleared
+    self.cleared = bool(cleared)
 
   def get_cleared(self):
     return self.cleared
+
+  def __eq__(self, other):
+    return self.definition == other.definition and \
+           self.date == other.date and \
+           self.cleared == other.cleared
