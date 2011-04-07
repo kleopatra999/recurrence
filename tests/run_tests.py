@@ -17,9 +17,10 @@ import sys
 import os
 import random
 import shutil
+import time
 import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(sys.argv[0], "../..")))
-import recurrence_lib.storage
+from recurrence_lib import events, storage
 
 test_temp_dir = os.path.abspath(os.path.join(sys.argv[0], "../__TMP__"))
 test_data_dir = os.path.abspath(os.path.join(sys.argv[0], "../test_data"))
@@ -42,20 +43,42 @@ class TestRecurrenceStorage(unittest.TestCase):
   
   def test_basic_read(self):
     filepath = self._get_data_filename('basic_read')
-    definitions, occurrences = \
-        recurrence_lib.storage.read_data_file(filepath)
+    definitions, occurrences = storage.read_data_file(filepath)
 
   def test_basic_write(self):
     read_filepath = self._get_data_filename('basic_read')
-    definitions, occurrences = \
-        recurrence_lib.storage.read_data_file(read_filepath)
+    definitions, occurrences = storage.read_data_file(read_filepath)
     write_filepath = self._get_temp_filename('basic_write')
-    recurrence_lib.storage.write_data_file(write_filepath,
+    storage.write_data_file(write_filepath,
                                            definitions, occurrences)
-    definitions2, occurrences2 = \
-        recurrence_lib.storage.read_data_file(write_filepath)
+    definitions2, occurrences2 = storage.read_data_file(write_filepath)
     self.assertEqual(definitions, definitions2)
     self.assertEqual(occurrences, occurrences2)
+
+  def test_create_and_store(self):
+    now = time.time()
+    later = time.localtime(now + 86400)
+    earlier = time.localtime(now + 86400)
+    now = time.localtime(now)
+
+    er = events.EventRecurrence(events.EVENT_PERIOD_WEEKLY)
+    ed = events.EventDefinition(1, "This is a\nrecurring event.\n",
+                                (now.tm_year, now.tm_mon, now.tm_mday), er)
+    eo1 = events.EventOccurrence(ed, (later.tm_year,
+                                      later.tm_mon,
+                                      later.tm_mday), True)
+    eo2 = events.EventOccurrence(ed, (earlier.tm_year,
+                                      earlier.tm_mon,
+                                      earlier.tm_mday))
+    write_filepath = self._get_temp_filename('create_and_store')
+    write_filepath = self._get_temp_filename('basic_write')
+    definitions = [ ed ]
+    occurrences = [ eo1, eo2 ]
+    storage.write_data_file(write_filepath, definitions, occurrences)
+    definitions2, occurrences2 = storage.read_data_file(write_filepath)
+    self.assertEqual(definitions, definitions2)
+    self.assertEqual(occurrences, occurrences2)
+    
 
 if __name__ == '__main__':
   unittest.main()

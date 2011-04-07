@@ -30,6 +30,11 @@ def parse_data_file_v1(fp):
     piece = piece.replace('\\t', '\t')
     piece = piece.replace('\\\\', '\\')
     return piece
+
+  def datestr_to_tuple(datestr):
+    if datestr == '':
+      return None
+    return tuple(map(lambda x: int(x), datestr.split('-')))
   
   while 1:
     line = fp.readline()
@@ -38,21 +43,17 @@ def parse_data_file_v1(fp):
     line = line.rstrip('\n\r')
     pieces = map(lambda x: unescape_piece(x), line.split('\t'))
     if pieces[0] == 'EventDefinition':
-      ed = events.EventDefinition()
-      ed.set_uuid(pieces[1])
-      ed.set_description(pieces[2])
-      ed.set_start_date(int(pieces[3]))
+      er = None
       if len(pieces) > 4:
-        er = events.EventRecurrence()
-        er.set_until_date(int(pieces[4]))
-        er.set_period(events.period_from_string(pieces[5]))
-        ed.set_recurrence(er)
+        er = events.EventRecurrence(events.period_from_string(pieces[4]),
+                                    datestr_to_tuple(pieces[5]))
+      ed = events.EventDefinition(pieces[1], pieces[2],
+                                  datestr_to_tuple(pieces[3]), er)
       definitions[ed.get_uuid()] = ed
     elif pieces[0] == 'EventOccurrence':
-      eo = events.EventOccurrence()
-      eo.set_definition(definitions[pieces[1]])
-      eo.set_date(int(pieces[2]))
-      eo.set_cleared(pieces[3] == 'true' and True or False)
+      eo = events.EventOccurrence(definitions[pieces[1]],
+                                  datestr_to_tuple(pieces[2]),
+                                  pieces[3] == 'true' and True or False)
       occurrences.append(eo)
     else:
       raise Exception("Unrecognized record type.")
@@ -85,6 +86,12 @@ def unparse_date_file_v1(filepath, definitions, occurrences):
     piece = piece.replace('\n', '\\n')
     piece = piece.replace('\r', '\\r')
     return piece
+
+  def datetuple_to_str(datetuple):
+    if datetuple is None:
+      return ''
+    else:
+      return "%d-%02d-%02d" % (datetuple[0], datetuple[1], datetuple[2])
   
   def unparse_pieces(pieces):
     return '\t'.join(map(lambda x: escape_piece(x), pieces)) + '\n'
@@ -93,19 +100,19 @@ def unparse_date_file_v1(filepath, definitions, occurrences):
     pieces = ['EventDefinition',
               definition.get_uuid(),
               definition.get_description(),
-              definition.get_start_date(),
+              datetuple_to_str(definition.get_start_date()),
               ]
     recurrence = definition.get_recurrence()
     if recurrence:
-      pieces.extend([recurrence.get_until_date(),
-                     events.period_to_string(recurrence.get_period()),
+      pieces.extend([events.period_to_string(recurrence.get_period()),
+                     datetuple_to_str(recurrence.get_until_date()),
                      ])
     return pieces
 
   def occurrence_to_pieces(occurrence):
     return ['EventOccurrence',
             occurrence.get_definition().get_uuid(),
-            occurrence.get_date(),
+            datetuple_to_str(occurrence.get_date()),
             occurrence.get_cleared() and 'true' or 'false',
             ]
     

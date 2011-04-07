@@ -37,12 +37,13 @@ period_from_string = period_to_string
 class EventRecurrence:
   """Describes the recurrence pattern used by an EventDescription object."""
   
-  def __init__(self):
-    self.until_date = None
-    self.period = None
+  def __init__(self, period=None, until_date=None):
+    self.set_period(period)
+    self.set_until_date(until_date)
 
   def set_period(self, period):
-    assert period in (EVENT_PERIOD_WEEKLY,
+    assert period in (None,
+                      EVENT_PERIOD_WEEKLY,
                       EVENT_PERIOD_MONTHLY,
                       EVENT_PERIOD_YEARLY)
     self.period = period
@@ -51,6 +52,8 @@ class EventRecurrence:
     return self.period
 
   def set_until_date(self, until_date):
+    assert until_date is None \
+           or type(until_date) == type(tuple())
     self.until_date = until_date
 
   def get_until_date(self):
@@ -65,11 +68,12 @@ class EventDefinition:
   """An event definition -- the template, of sorts, from which
   individual event occurrences are created."""
   
-  def __init__(self):
-    self.uuid = None
-    self.description = None
-    self.start_date = None
-    self.recurrence = None
+  def __init__(self, uuid=None, description=None, start_date=None,
+               recurrence=None):
+    self.set_uuid(uuid)
+    self.set_description(description)
+    self.set_start_date(start_date)
+    self.set_recurrence(recurrence)
 
   def set_uuid(self, uuid):
     self.uuid = uuid
@@ -85,6 +89,7 @@ class EventDefinition:
     return self.description
 
   def set_start_date(self, start_date):
+    assert type(start_date) == type(tuple())
     self.start_date = start_date
 
   def get_start_date(self):
@@ -107,10 +112,10 @@ class EventDefinition:
 class EventOccurrence:
   """A single occurrence of an event."""
   
-  def __init__(self):
-    self.definition = None
-    self.date = None
-    self.cleared = None
+  def __init__(self, definition=None, date=None, cleared=False):
+    self.set_definition(definition)
+    self.set_date(date)
+    self.set_cleared(cleared)
 
   def set_definition(self, definition):
     assert definition is None or isinstance(definition, EventDefinition)
@@ -120,14 +125,15 @@ class EventOccurrence:
     return self.definition
 
   def set_date(self, date):
+    assert type(date) == type(tuple())
     self.date = date
 
   def get_date(self):
     return self.date
 
   def set_cleared(self, cleared):
-    assert cleared is None or type(cleared) == type(True)
-    self.cleared = bool(cleared)
+    assert cleared == True or cleared == False
+    self.cleared = cleared
 
   def get_cleared(self):
     return self.cleared
