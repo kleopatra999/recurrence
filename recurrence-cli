@@ -1,0 +1,102 @@
+#!/usr/bin/env python
+# ====================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ====================================================================
+
+"""recurrence-cli:  Recurrence command-line application."""
+import sys
+import os
+import recurrence_lib
+try:
+  import readline
+except:
+  pass
+
+class RecurrenceCommandLine:
+
+  def __init__(self, datafile):
+    self.datafile = datafile
+
+  def run(self):
+    while 1:
+      try:
+        input = raw_input('\nrecurrence> ')
+      except EOFError:
+        return
+      args = input.split(' ')
+      if not args:
+        continue
+      cmd = args.pop(0)
+      if cmd == 'quit':
+        return
+      try:
+        func = getattr(self, 'cmd_' + cmd)
+        try:
+          func(*args)
+        except Exception, e:
+          sys.stdout.write("Error: %s\n" % (str(e)))
+        sys.stdout.write("\n")
+      except:
+        sys.stdout.write("Unknown command '%s'.  (Use 'help' to see "
+                         "commands.)\n" % (cmd))
+    
+  ###----------------------- CLI COMMANDS -------------------------###
+    
+  def cmd_help(self):
+    sys.stdout.write("""\
+help                   Show this help output.
+quit                   Um... quit?""")
+
+  def cmd_quit(self):
+    sys.stdout.write('Quitting.\n')
+  
+
+def usage_and_exit(errmsg=None):
+  progname = os.path.basename(sys.argv[0])
+  stream = errmsg is None and sys.stdout or sys.stderr
+  stream.write("""\
+%s - cli for the Recurrence recurrent event manager
+
+Usage: %s [OPTIONS] DATAFILE
+
+   Perform operations on the Recurrence data found in DATAFILE.
+
+Options:
+
+   --help (-h):     Show this usage message and exit.
+   
+""" % (progname, progname))
+  if errmsg is not None:
+    stream.write("ERROR: %s\n" % (errmsg))
+    sys.exit(1)
+  sys.exit(0)
+    
+  
+def main():
+  argc = len(sys.argv)
+  if argc == 1:
+    usage_and_exit("Not enough arguments.")
+  elif '--help' in sys.argv[1:]:
+    usage_and_exit()
+  elif argc > 2:
+    usage_and_exit("Unexpected number of arguments.")
+
+  datafile = os.path.normpath(sys.argv[1])
+  rcli = RecurrenceCommandLine(datafile)
+  rcli.run()
+
+if __name__ == "__main__":
+  try:
+    main()
+  except KeyboardInterrupt:
+    pass
