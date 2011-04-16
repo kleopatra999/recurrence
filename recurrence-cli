@@ -22,44 +22,109 @@ try:
 except:
   pass
 
+class RecurrenceCLISyntaxError(Exception): pass
+
 class RecurrenceCommandLine:
 
   def __init__(self, datafile):
     self.datafile = datafile
+    if os.path.exists(datafile) and os.path.isfile(datafile):
+      self.definitions, self.occurrences = \
+        recurrence_lib.storage.read_data_file(datafile)
+    else:
+      self.definitions = []
+      self.occurrences = []
+    self.has_mods = False
 
   def run(self):
     while 1:
       try:
-        input = raw_input('\nrecurrence> ')
+        input = raw_input('\nrecurrence%s> ' % (self.has_mods and '*' or ''))
       except EOFError:
         return
       args = input.split(' ')
       if not args:
         continue
       cmd = args.pop(0)
-      if cmd == 'quit':
-        return
       try:
         func = getattr(self, 'cmd_' + cmd)
         try:
           func(*args)
+          if cmd == 'quit':
+            return
+        except RecurrenceCLISyntaxError, e:
+          sys.stdout.write("Error: %s\n" % (str(e)))
         except Exception, e:
           sys.stdout.write("Error: %s\n" % (str(e)))
         sys.stdout.write("\n")
       except:
         sys.stdout.write("Unknown command '%s'.  (Use 'help' to see "
                          "commands.)\n" % (cmd))
-    
+
+  def confirm(self, promptstr, default='n'):
+    assert default in ('y', 'n')
+    while 1:
+      try:
+        input = raw_input('\n%s? [%s] ' % (promptstr, default)).lower()
+        if input in ('y', 'n', ''):
+          return input or default
+      except:
+        pass 
+        
   ###----------------------- CLI COMMANDS -------------------------###
     
-  def cmd_help(self):
-    sys.stdout.write("""\
-help                   Show this help output.
-quit                   Um... quit?""")
+  def cmd_help(self, *args):
+    """Usage: help [SUBCOMMAND]
 
-  def cmd_quit(self):
+    Show help on SUBCOMMAND, if provided, or just general help otherwise.
+    """
+    func = None
+    argc = len(args)
+    if argc > 1:
+      raise RecurrenceCLISyntaxError("Too many arguments")
+    elif argc == 1:
+      try: 
+        func = getattr(self, 'cmd_' + args[0])
+      except:
+        sys.stdout.write("Error: Unknown command '%s'\n" % (args[0]))
+        func = None
+    if func:
+      sys.stdout.write(func.__doc__)
+    else:
+      sys.stdout.write("""\
+Available subcommands (use 'help SUBCOMMAND' for specific help):
+
+   help     Show help.
+   quit     Um... quit?
+   save     Save data to a data file.
+""")
+
+  def cmd_quit(self, *args):
+    """Usage: quit
+
+    Quit the program.  Pretty straightforward, eh?"""
+    if len(args):
+      raise RecurrenceCLISyntaxError("Too many arguments")
     sys.stdout.write('Quitting.\n')
-  
+
+  def cmd_save(self, *args):
+    """Usage: save [DATAFILE]
+
+    Save the current data to DATAFILE, if provided, or to the original
+    data file used with the program otherwise."""
+    datafile = self.datafile 
+    if len(args) > 1:
+      raise RecurrenceCLISyntaxError("Too many arguments")
+    elif len(args) == 1:
+      datafile = os.path.normpath(args[0])
+    if os.path.exists(datafile):
+      if self.confirm("Overwrite '%s'" % (datafile)) == 'n':
+        return 
+    recurrence_lib.storage.write_data_file(datafile, self.definitions,
+                                           self.occurrences)
+    sys.stdout.write("Saved.\n")
+    if not args:
+      self.has_mods = False 
 
 def usage_and_exit(errmsg=None):
   progname = os.path.basename(sys.argv[0])
