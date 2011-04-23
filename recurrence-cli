@@ -16,11 +16,15 @@
 """recurrence-cli:  Recurrence command-line application."""
 import sys
 import os
+import re
 import recurrence_lib
 try:
   import readline
 except:
   pass
+import uuid
+
+_date_re = re.compile('2[0-9]{3}-[0-9]{2}-[0-9]{2}')
 
 class RecurrenceCLISyntaxError(Exception): pass
 
@@ -61,17 +65,75 @@ class RecurrenceCommandLine:
         sys.stdout.write("Unknown command '%s'.  (Use 'help' to see "
                          "commands.)\n" % (cmd))
 
-  def confirm(self, promptstr, default='n'):
-    assert default in ('y', 'n')
+  def prompt(self, promptstr, validator=None, default=None):
+    # Prompt with PROMPTSTR, returning the user's explicit or implicit
+    # response.  VALIDATOR is a function which accepts the user's
+    # input at the prompt and checks for validity, returning None if
+    # the input is invalid, otherwise returning the (possibly
+    # normalized) input.  If DEFAULT is not None, and user provides an
+    # empty response, return DEFAULT.
+    default_str = ''
+    if default is not None:
+      default_str = ' [%s]' % (default)
     while 1:
       try:
-        input = raw_input('\n%s? [%s] ' % (promptstr, default)).lower()
-        if input in ('y', 'n', ''):
-          return input or default
+        input = raw_input('\n%s?%s ' % (promptstr, default_str))
+        if input == '' and default is not None:
+          return default
+        if validator is not None:
+          input = validator(input)
+          if input is None:
+            continue
+        return input
       except:
-        pass 
-        
+        pass
+
+  def datestr_to_datetuple(self, datestr):
+    return (int(datestr[0:4]), int(datestr[5:7]), int(datestr[8:10]))
+  
   ###----------------------- CLI COMMANDS -------------------------###
+
+  def cmd_define(self, *args):
+    """Usage: define
+
+    Interactively add a new event definition.
+    """
+    if len(args):
+      raise RecurrenceCLISyntaxError("Too many arguments")
+
+
+    description = self.prompt("Description",
+                              lambda x: x or None)
+    start_date = self.prompt("Start date",
+                             lambda x: _date_re.match(x) and x or None)
+    start_date = self.datestr_to_datetuple(start_date)
+    recurs = self.prompt("Recurrence ('n'one, 'w'eekly, 'm'onthly, 'y'early)",
+                         lambda x: x in ('n', 'w', 'm', 'y') and x or None)
+    if recurs == 'y':
+      period = recurrence_lib.events.EVENT_PERIOD_YEARLY
+    elif recurs == 'm':
+      period = recurrence_lib.events.EVENT_PERIOD_MONTHLY
+    elif recurs == 'w':
+      period = recurrence_lib.events.EVENT_PERIOD_WEEKLY
+    else:
+      period = None
+    if period:
+      end_date = self.prompt("Until date",
+                             lambda x: _date_re.match(x) and x or None,
+                             'none')
+      if end_date == 'none':
+        end_date = None
+      else:
+        end_date = self.datestr_to_datetuple(end_date)
+      recurrence = recurrence_lib.events.EventRecurrence(period, end_date)
+    else:
+      recurrence = None
+    new_def = recurrence_lib.events.EventDefinition(uuid.uuid4().hex,
+                                                    description,
+                                                    start_date,
+                                                    recurrence)
+    self.definitions.append(new_def)
+    self.has_mods = True
     
   def cmd_help(self, *args):
     """Usage: help [SUBCOMMAND]
@@ -95,6 +157,7 @@ class RecurrenceCommandLine:
 Available subcommands (use 'help SUBCOMMAND' for specific help):
 
    help     Show help.
+   define   Add a new event definition.
    quit     Um... quit?
    save     Save data to a data file.
 """)
@@ -105,6 +168,10 @@ Available subcommands (use 'help SUBCOMMAND' for specific help):
     Quit the program.  Pretty straightforward, eh?"""
     if len(args):
       raise RecurrenceCLISyntaxError("Too many arguments")
+    if self.has_mods:
+      if self.prompt("Changes made.  Save ('y', 'n')",
+                     lambda x: x in ('y', 'n') and x or None) == 'y':
+        self.cmd_save()
     sys.stdout.write('Quitting.\n')
 
   def cmd_save(self, *args):
@@ -118,7 +185,9 @@ Available subcommands (use 'help SUBCOMMAND' for specific help):
     elif len(args) == 1:
       datafile = os.path.normpath(args[0])
     if os.path.exists(datafile):
-      if self.confirm("Overwrite '%s'" % (datafile)) == 'n':
+      if self.prompt("Overwrite '%s' ('y', 'n')" % (datafile),
+                     lambda x: x in ('y', 'n') and x or None,
+                     'n') == 'n':
         return 
     recurrence_lib.storage.write_data_file(datafile, self.definitions,
                                            self.occurrences)
