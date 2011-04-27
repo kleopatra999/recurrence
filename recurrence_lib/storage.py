@@ -16,6 +16,8 @@
 
 
 import events
+import datetime
+
 
 LATEST_VERSION = 1
 
@@ -31,10 +33,12 @@ def parse_data_file_v1(fp):
     piece = piece.replace('\\\\', '\\')
     return piece
 
-  def datestr_to_tuple(datestr):
+  def parse_date(datestr):
     if datestr == '':
       return None
-    return tuple(map(lambda x: int(x), datestr.split('-')))
+    date_pieces = map(lambda x: int(x), datestr.split('-'))
+    assert len(date_pieces) == 3
+    return datetime.date(date_pieces[0], date_pieces[1], date_pieces[2])
   
   while 1:
     line = fp.readline()
@@ -46,13 +50,13 @@ def parse_data_file_v1(fp):
       er = None
       if len(pieces) > 4:
         er = events.EventRecurrence(events.period_from_string(pieces[4]),
-                                    datestr_to_tuple(pieces[5]))
+                                    parse_date(pieces[5]))
       ed = events.EventDefinition(pieces[1], pieces[2],
-                                  datestr_to_tuple(pieces[3]), er)
+                                  parse_date(pieces[3]), er)
       definitions[ed.get_uuid()] = ed
     elif pieces[0] == 'EventOccurrence':
       eo = events.EventOccurrence(definitions[pieces[1]],
-                                  datestr_to_tuple(pieces[2]),
+                                  parse_date(pieces[2]),
                                   pieces[3] == 'true' and True or False)
       occurrences.append(eo)
     else:
@@ -87,11 +91,11 @@ def unparse_date_file_v1(filepath, definitions, occurrences):
     piece = piece.replace('\r', '\\r')
     return piece
 
-  def datetuple_to_str(datetuple):
-    if datetuple is None:
+  def unparse_date(date):
+    if date is None:
       return ''
     else:
-      return "%d-%02d-%02d" % (datetuple[0], datetuple[1], datetuple[2])
+      return "%d-%02d-%02d" % (date.year, date.month, date.day)
   
   def unparse_pieces(pieces):
     return '\t'.join(map(lambda x: escape_piece(x), pieces)) + '\n'
@@ -100,19 +104,19 @@ def unparse_date_file_v1(filepath, definitions, occurrences):
     pieces = ['EventDefinition',
               definition.get_uuid(),
               definition.get_description(),
-              datetuple_to_str(definition.get_start_date()),
+              unparse_date(definition.get_start_date()),
               ]
     recurrence = definition.get_recurrence()
     if recurrence:
       pieces.extend([events.period_to_string(recurrence.get_period()),
-                     datetuple_to_str(recurrence.get_until_date()),
+                     unparse_date(recurrence.get_until_date()),
                      ])
     return pieces
 
   def occurrence_to_pieces(occurrence):
     return ['EventOccurrence',
             occurrence.get_definition().get_uuid(),
-            datetuple_to_str(occurrence.get_date()),
+            unparse_date(occurrence.get_date()),
             occurrence.get_cleared() and 'true' or 'false',
             ]
     

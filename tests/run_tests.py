@@ -19,6 +19,7 @@ import random
 import shutil
 import time
 import unittest
+import datetime
 sys.path.insert(0, os.path.abspath(os.path.join(sys.argv[0], "../..")))
 from recurrence_lib import events, storage
 
@@ -56,20 +57,15 @@ class TestRecurrenceStorage(unittest.TestCase):
     self.assertEqual(occurrences, occurrences2)
 
   def test_create_and_store(self):
-    now = time.time()
-    later = time.localtime(now + 86400)
-    earlier = time.localtime(now + 86400)
-    now = time.localtime(now)
+    now = datetime.date.today()
+    later = now - datetime.timedelta(1)
+    earlier = now - datetime.timedelta(-1)
 
     er = events.EventRecurrence(events.EVENT_PERIOD_WEEKLY)
     ed = events.EventDefinition(1, "This is a\nrecurring event.\n",
-                                (now.tm_year, now.tm_mon, now.tm_mday), er)
-    eo1 = events.EventOccurrence(ed, (later.tm_year,
-                                      later.tm_mon,
-                                      later.tm_mday), True)
-    eo2 = events.EventOccurrence(ed, (earlier.tm_year,
-                                      earlier.tm_mon,
-                                      earlier.tm_mday))
+                                now, er)
+    eo1 = events.EventOccurrence(ed, later, True)
+    eo2 = events.EventOccurrence(ed, earlier)
     write_filepath = self._get_temp_filename('create_and_store')
     write_filepath = self._get_temp_filename('basic_write')
     definitions = [ ed ]

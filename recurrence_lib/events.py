@@ -14,6 +14,8 @@
 
 """events.py:  Recurrence data model object."""
 
+import datetime
+
 
 EVENT_PERIOD_WEEKLY = 'weekly'
 EVENT_PERIOD_MONTHLY = 'monthly'
@@ -21,6 +23,7 @@ EVENT_PERIOD_YEARLY = 'yearly'
 
 
 class InvalidEventRecurrencePeriod(Exception): pass
+class NotImplementedError(Exception): pass
 
 def period_to_string(s):
   if s == EVENT_PERIOD_YEARLY or \
@@ -53,7 +56,7 @@ class EventRecurrence:
 
   def set_until_date(self, until_date):
     assert until_date is None \
-           or type(until_date) == type(tuple())
+           or type(until_date) == datetime.date
     self.until_date = until_date
 
   def get_until_date(self):
@@ -89,7 +92,7 @@ class EventDefinition:
     return self.description
 
   def set_start_date(self, start_date):
-    assert type(start_date) == type(tuple())
+    assert type(start_date) == datetime.date
     self.start_date = start_date
 
   def get_start_date(self):
@@ -125,7 +128,7 @@ class EventOccurrence:
     return self.definition
 
   def set_date(self, date):
-    assert type(date) == type(tuple())
+    assert type(date) == datetime.date
     self.date = date
 
   def get_date(self):
