@@ -29,6 +29,10 @@ _date_re = re.compile('2[0-9]{3}-[0-9]{2}-[0-9]{2}')
 
 class RecurrenceCLISyntaxError(Exception): pass
 
+class RecurrenceCLINotImplementedError(Exception):
+  def __init__(self):
+    Exception.__init__(self, "Not yet implemented")
+
 class RecurrenceCommandLine:
 
   def __init__(self, datafile):
@@ -164,6 +168,7 @@ Available subcommands (use 'help SUBCOMMAND' for specific help):
    define   Add a new event definition.
    quit     Um... quit?
    save     Save data to a data file.
+   show     Show events.
 """)
 
   def cmd_quit(self, *args):
@@ -201,6 +206,36 @@ data file used with the program otherwise."""
     if not args:
       self.has_mods = False
 
+  def cmd_show(self, *args):
+    """\
+Usage: show past
+       show [NUM_DAYS]
+
+Show uncleared events, either all those in the past or those NUM_DAYS
+(28, by default; 366 maximum) into the future."""
+    now = datetime.date.today()
+    if len(args) > 1:
+      raise RecurrenceCLISyntaxError("Too many arguments")
+    elif len(args) == 1 and args[0] == 'past':
+      # show past uncleared events
+      raise RecurrenceCLINotImplementedError()
+    else:
+      # show future uncleared events
+      if len(args) == 1:
+        try:
+          num_days = int(args[0])
+        except:
+          raise RecurrenceCLISyntaxError("Unable to parse number of days")
+        if num_days < 1:
+          raise RecurrenceCLISyntaxError("Number of days must be a positive "
+                                         "integer")
+        if num_days > 366:
+          raise RecurrenceCLISyntaxError("Number of days must be no more than "
+                                         "366")
+      else:
+        num_days = 28
+      raise RecurrenceCLINotImplementedError()
+      
 def usage_and_exit(errmsg=None):
   progname = os.path.basename(sys.argv[0])
   stream = errmsg is None and sys.stdout or sys.stderr
