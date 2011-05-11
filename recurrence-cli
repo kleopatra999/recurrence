@@ -97,10 +97,10 @@ class RecurrenceCommandLine:
   ###----------------------- CLI COMMANDS -------------------------###
 
   def cmd_define(self, *args):
-    """Usage: define
+    """\
+Usage: define
 
-    Interactively add a new event definition.
-    """
+Interactively add a new event definition."""
     if len(args):
       raise RecurrenceCLISyntaxError("Too many arguments")
 
@@ -139,10 +139,10 @@ class RecurrenceCommandLine:
     self.has_mods = True
     
   def cmd_help(self, *args):
-    """Usage: help [SUBCOMMAND]
+    """\
+Usage: help [SUBCOMMAND]
 
-    Show help on SUBCOMMAND, if provided, or just general help otherwise.
-    """
+Show help on SUBCOMMAND, if provided, or just general help otherwise."""
     func = None
     argc = len(args)
     if argc > 1:
@@ -166,9 +166,10 @@ Available subcommands (use 'help SUBCOMMAND' for specific help):
 """)
 
   def cmd_quit(self, *args):
-    """Usage: quit
+    """\
+Usage: quit
 
-    Quit the program.  Pretty straightforward, eh?"""
+Quit the program.  Pretty straightforward, eh?"""
     if len(args):
       raise RecurrenceCLISyntaxError("Too many arguments")
     if self.has_mods:
@@ -178,10 +179,11 @@ Available subcommands (use 'help SUBCOMMAND' for specific help):
     sys.stdout.write('Quitting.\n')
 
   def cmd_save(self, *args):
-    """Usage: save [DATAFILE]
+    """\
+Usage: save [DATAFILE]
 
-    Save the current data to DATAFILE, if provided, or to the original
-    data file used with the program otherwise."""
+Save the current data to DATAFILE, if provided, or to the original
+data file used with the program otherwise."""
     datafile = self.datafile 
     if len(args) > 1:
       raise RecurrenceCLISyntaxError("Too many arguments")
@@ -196,7 +198,7 @@ Available subcommands (use 'help SUBCOMMAND' for specific help):
                                            self.occurrences)
     sys.stdout.write("Saved.\n")
     if not args:
-      self.has_mods = False 
+      self.has_mods = False
 
 def usage_and_exit(errmsg=None):
   progname = os.path.basename(sys.argv[0])
