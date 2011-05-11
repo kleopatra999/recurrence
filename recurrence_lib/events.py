@@ -31,7 +31,8 @@ def period_to_string(s):
      s == EVENT_PERIOD_WEEKLY:
     return s
   else:
-    raise InvalidEventRecurrencePeriod()
+    raise InvalidEventRecurrencePeriod("Unrecognized period value: %s"
+                                       % (str(s)))
 
 
 period_from_string = period_to_string
