@@ -58,9 +58,10 @@ class RecurrenceCommandLine:
           if cmd == 'quit':
             return
         except RecurrenceCLISyntaxError, e:
-          sys.stdout.write("Error: %s\n" % (str(e)))
+          sys.stdout.write("ERROR: %s\n\n" % (str(e)))
+          self.cmd_help(cmd)
         except Exception, e:
-          sys.stdout.write("Error: %s\n" % (str(e)))
+          sys.stdout.write("ERROR: %s\n" % (str(e)))
         sys.stdout.write("\n")
       except:
         sys.stdout.write("Unknown command '%s'.  (Use 'help' to see "
@@ -151,7 +152,7 @@ Show help on SUBCOMMAND, if provided, or just general help otherwise."""
       try: 
         func = getattr(self, 'cmd_' + args[0])
       except:
-        sys.stdout.write("Error: Unknown command '%s'\n" % (args[0]))
+        sys.stdout.write("ERROR: Unknown command '%s'\n" % (args[0]))
         func = None
     if func:
       sys.stdout.write(func.__doc__)
