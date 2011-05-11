@@ -18,6 +18,7 @@ import sys
 import os
 import re
 import recurrence_lib
+import datetime
 try:
   import readline
 except:
@@ -88,8 +89,10 @@ class RecurrenceCommandLine:
       except:
         pass
 
-  def datestr_to_datetuple(self, datestr):
-    return (int(datestr[0:4]), int(datestr[5:7]), int(datestr[8:10]))
+  def parse_datestr(self, datestr):
+    return datetime.date(int(datestr[0:4]),
+                         int(datestr[5:7]),
+                         int(datestr[8:10]))
   
   ###----------------------- CLI COMMANDS -------------------------###
 
@@ -106,7 +109,7 @@ class RecurrenceCommandLine:
                               lambda x: x or None)
     start_date = self.prompt("Start date",
                              lambda x: _date_re.match(x) and x or None)
-    start_date = self.datestr_to_datetuple(start_date)
+    start_date = self.parse_datestr(start_date)
     recurs = self.prompt("Recurrence ('n'one, 'w'eekly, 'm'onthly, 'y'early)",
                          lambda x: x in ('n', 'w', 'm', 'y') and x or None)
     if recurs == 'y':
@@ -124,7 +127,7 @@ class RecurrenceCommandLine:
       if end_date == 'none':
         end_date = None
       else:
-        end_date = self.datestr_to_datetuple(end_date)
+        end_date = self.parse_datestr(end_date)
       recurrence = recurrence_lib.events.EventRecurrence(period, end_date)
     else:
       recurrence = None
