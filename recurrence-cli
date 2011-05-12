@@ -27,11 +27,14 @@ import uuid
 
 _date_re = re.compile('2[0-9]{3}-[0-9]{2}-[0-9]{2}')
 
-class RecurrenceCLISyntaxError(Exception): pass
+class RecurrenceCLISyntaxError(Exception):
+  pass
+
 
 class RecurrenceCLINotImplementedError(Exception):
   def __init__(self):
     Exception.__init__(self, "Not yet implemented")
+
 
 class RecurrenceCommandLine:
 
@@ -236,6 +239,7 @@ Show uncleared events, either all those in the past or those NUM_DAYS
         num_days = 28
       raise RecurrenceCLINotImplementedError()
       
+
 def usage_and_exit(errmsg=None):
   progname = os.path.basename(sys.argv[0])
   stream = errmsg is None and sys.stdout or sys.stderr
