@@ -101,7 +101,13 @@ class RecurrenceCommandLine:
     return datetime.date(int(datestr[0:4]),
                          int(datestr[5:7]),
                          int(datestr[8:10]))
-  
+
+  def print_occurrence(self, occurrence):
+    date = occurrence.get_date()
+    desc = occurrence.get_definition().get_description()
+    sys.stdout.write("%4d-%02d-%02d | %s\n"
+                     % (date.year, date.month, date.day, desc.ljust(60)[:60]))
+    
   ###----------------------- CLI COMMANDS -------------------------###
 
   def cmd_define(self, *args):
@@ -211,33 +217,46 @@ data file used with the program otherwise."""
 
   def cmd_show(self, *args):
     """\
-Usage: show past
-       show [NUM_DAYS]
+Usage: show [NUM_DAYS]
 
-Show uncleared events, either all those in the past or those NUM_DAYS
+Show uncleared events -- all those in the past plus those NUM_DAYS
 (28, by default; 366 maximum) into the future."""
     now = datetime.date.today()
     if len(args) > 1:
       raise RecurrenceCLISyntaxError("Too many arguments")
-    elif len(args) == 1 and args[0] == 'past':
-      # show past uncleared events
-      raise RecurrenceCLINotImplementedError()
-    else:
-      # show future uncleared events
-      if len(args) == 1:
-        try:
-          num_days = int(args[0])
-        except:
-          raise RecurrenceCLISyntaxError("Unable to parse number of days")
-        if num_days < 1:
-          raise RecurrenceCLISyntaxError("Number of days must be a positive "
-                                         "integer")
-        if num_days > 366:
-          raise RecurrenceCLISyntaxError("Number of days must be no more than "
+    if len(args) == 1:
+      try:
+        num_days = int(args[0])
+      except:
+        raise RecurrenceCLISyntaxError("Unable to parse number of days")
+      if num_days < 1:
+        raise RecurrenceCLISyntaxError("Number of days must be a positive "
+                                       "integer")
+      if num_days > 366:
+        raise RecurrenceCLISyntaxError("Number of days must be no more than "
                                          "366")
-      else:
-        num_days = 28
-      raise RecurrenceCLINotImplementedError()
+    else:
+      num_days = 28
+    def _cmp_date(a, b):
+      if a.get_date() < b.get_date():
+        return -1
+      if a.get_date() > b.get_date():
+        return 1
+      return cmp(a.get_definition().get_description(),
+                 b.get_definition().get_description())
+    past_occs = recurrence_lib.events._get_past_occurrences(self.definitions,
+                                                            self.occurrences,
+                                                            now)
+    past_occs.sort(_cmp_date)
+    fut_occs = recurrence_lib.events._get_future_occurrences(self.definitions,
+                                                             self.occurrences,
+                                                             now, num_days)
+    fut_occs.sort(_cmp_date)
+    for occurrence in past_occs:
+      self.print_occurrence(occurrence)
+    sys.stdout.write("--------------------------\n")
+    for occurrence in fut_occs:
+      self.print_occurrence(occurrence)
       
 
 def usage_and_exit(errmsg=None):
