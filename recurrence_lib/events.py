@@ -12,7 +12,7 @@
 # limitations under the License.
 # ====================================================================
 
-"""events.py:  Recurrence data model object."""
+"""events.py:  Recurrence data model objects."""
 
 import datetime
 
@@ -112,6 +112,9 @@ class EventDefinition:
            self.start_date == other.start_date and \
            self.recurrence == other.recurrence
 
+  def get_first_occurrence(self):
+    return EventOccurrence(self, self.start_date)
+
 
 class EventOccurrence:
   """A single occurrence of an event."""
@@ -146,3 +149,59 @@ class EventOccurrence:
     return self.definition == other.definition and \
            self.date == other.date and \
            self.cleared == other.cleared
+
+  def next(self):
+    recurrence = self.definition.get_recurrence()
+    if recurrence:
+      period = recurrence.get_period()
+      until_date = recurrence.get_until_date()
+      if period == EVENT_PERIOD_WEEKLY:
+        new_date = self.date + datetime.timedelta(7, 0, 0)
+      elif period == EVENT_PERIOD_MONTHLY:
+        new_month = self.date.month + 1
+        new_year = self.date.year
+        if new_month == 13:
+          new_month = 1
+          new_year = new_year + 1
+        new_date = datetime.date(new_year,
+                                 new_month,
+                                 self.date.day)
+      elif period == EVENT_PERIOD_YEARLY:
+        new_date = datetime.date(self.date.year + 1,
+                                 self.date.month,
+                                 self.date.day)
+      if (not until_date) or (new_date <= until_date):
+        return EventOccurrence(self.definition, new_date)
+    # no recurrence, or no occurrences before until_date
+    return None
+
+
+def _get_past_occurrences(definitions, occurrences, now_time):
+  past_occurrences = []
+  for occurrence in occurrences:
+    if (not occurrence.get_cleared()) and (occurrence.get_date() < now_time):
+      past_occurrences.append(occurrence)
+  return past_occurrences
+
+
+def _get_future_occurrences(definitions, occurrences, now_time, num_days):
+  end_time = now_time + datetime.timedelta(num_days, 0, 0)
+  future_occurrences = []
+  for definition in definitions:
+    occ = definition.get_first_occurrence()
+    while 1:
+      if occ.get_date() >= now_time and occ.get_date() <= end_time:
+        future_occ = occ
+        for i in range(len(occurrences)):
+          if occurrences[i].get_definition() == future_occ.get_definition() \
+             and occurrences[i].get_date() == future_occ.get_date() \
+             and occurrences[i].get_cleared():
+            future_occ = None
+        if future_occ:
+          future_occurrences.append(future_occ)
+      occ = occ.next()
+      if occ is None:
+        break
+      if occ.get_date() > end_time:
+        break
+  return future_occurrences
