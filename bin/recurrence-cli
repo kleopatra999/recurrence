@@ -16,12 +16,16 @@
 """recurrence-cli:  Recurrence command-line application."""
 import sys
 import os
+try:
+  import recurrence_lib
+except ImportError: 
+  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), ".."))
+  import recurrence_lib
 import re
-import recurrence_lib
 import datetime
 try:
   import readline
-except:
+except ImportError:
   pass
 import uuid
 
