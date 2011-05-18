@@ -59,14 +59,13 @@ class TaskBarIcon(wx.TaskBarIcon):
       self.SetIcon(wx.Icon("tbicon-normal.xpm", wx.BITMAP_TYPE_XPM))
    
     
-class TaskBarTopFrame(wx.Frame):
+class AppFrame(wx.Frame):
   """Recurrence primary task-bar frame."""
 
   def __init__(self, title, resources):
     self.resources = resources
     wx.Frame.__init__(self, None, -1, title, size=(100, 100),
                       style=wx.FRAME_NO_TASKBAR|wx.NO_FULL_REPAINT_ON_RESIZE)
-
     self.popup = self.resources.LoadMenu('TaskBarPopupMenu')
     wx.EVT_MENU(self.popup,
                 self.resources.GetXRCID('TaskBarMenuItemShow'),
@@ -114,7 +113,7 @@ class RecurrenceApp(wx.App):
   def OnInit(self):
     """Called when the application is being initialed."""
     self.resources = wx.xrc.XmlResource('resources.xrc')
-    self.frame = TaskBarTopFrame("Recurrence", self.resources)
+    self.frame = AppFrame("Recurrence", self.resources)
     self.SetTopWindow(self.frame)
     return True
 
