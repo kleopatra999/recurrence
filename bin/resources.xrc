@@ -3,10 +3,6 @@
   <object class="wxMenu" name="TaskBarPopupMenu">
     <label>Recurrence</label>
     <style></style>
-    <object class="wxMenuItem" name="TaskBarMenuItemShow">
-      <label>&amp;Show Events</label>
-      <help>Show Recurrence main events dialog</help>
-    </object>
     <object class="wxMenuItem" name="TaskBarMenuItemToggle">
       <label>&amp;Toggle Icon State</label>
       <help>Toggle the alert state of the icon.  (For debugging.)</help>
@@ -15,6 +11,42 @@
     <object class="wxMenuItem" name="TaskBarMenuItemExit">
       <label>&amp;Exit Recurrence</label>
       <help>Close and exit the Recurrence program.</help>
+    </object>
+  </object>
+  <object class="wxPanel" name="AppFramePanel">
+    <object class="wxFlexGridSizer">
+      <cols>1</cols>
+      <rows>2</rows>
+      <growablerows>0</growablerows>
+      <growablecols>0</growablecols>
+      <object class="sizeritem">
+        <object class="wxListCtrl">
+          <style>wxLC_REPORT|wxLC_HRULES</style>
+        </object>
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+      </object>
+      <object class="sizeritem">
+        <object class="wxBoxSizer">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <object class="wxButton" name="ClearButton">
+              <label>&amp;Clear</label>
+            </object>
+            <flag>wxLEFT|wxRIGHT</flag>
+            <border>5</border>
+          </object>
+          <object class="sizeritem">
+            <object class="wxButton" name="UpdateButton">
+              <label>&amp;Update</label>
+            </object>
+            <flag>wxLEFT|wxRIGHT</flag>
+            <border>5</border>
+          </object>
+        </object>
+        <flag>wxALL|wxSTRETCH_NOT|wxALIGN_CENTRE</flag>
+        <border>5</border>
+      </object>
     </object>
   </object>
 </resource>

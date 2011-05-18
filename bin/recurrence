@@ -64,31 +64,62 @@ class AppFrame(wx.Frame):
 
   def __init__(self, title, resources):
     self.resources = resources
-    wx.Frame.__init__(self, None, -1, title, size=(100, 100),
-                      style=wx.FRAME_NO_TASKBAR|wx.NO_FULL_REPAINT_ON_RESIZE)
+    wx.Frame.__init__(self, None, -1, title, size=(400, 400)),
+
+    # Create the taskbar popup window, and register event handlers.
     self.popup = self.resources.LoadMenu('TaskBarPopupMenu')
-    wx.EVT_MENU(self.popup,
-                self.resources.GetXRCID('TaskBarMenuItemShow'),
-                self._TaskBarMenuItemShowSelected)
     wx.EVT_MENU(self.popup,
                 self.resources.GetXRCID('TaskBarMenuItemToggle'),
                 self._TaskBarMenuItemToggleSelected)
     wx.EVT_MENU(self.popup,
                 self.resources.GetXRCID('TaskBarMenuItemExit'),
                 self._TaskBarMenuItemExitSelected)
+
+    # Instantiate the taskbar icon, and register event handlers.
     self.tbicon = TaskBarIcon(self.popup)
-    self.Show(False)
+    wx.EVT_TASKBAR_LEFT_DOWN(self.tbicon, self._TaskBarLeftClick)
+
+    # Add the main panel to the frame.
+    panel = self.resources.LoadPanel(self, 'AppFramePanel')
+    sizer = wx.FlexGridSizer(1, 1)
+    sizer.AddGrowableCol(0)
+    sizer.AddGrowableRow(0)
+    sizer.Add(panel, flag=wx.EXPAND)
+    self.SetSizer(sizer)
+
+    # Register frame-specific event handers.
+    wx.EVT_CLOSE(self, self._FrameClosed)
+    wx.EVT_ICONIZE(self, self._FrameIconized)
+    
+    # Show this frame.
+    self.Show()
 
   def Close(self):
     """Overrides wx.Frame.Close() to ensure that we remove the icon
     installed by the TaskBarIcon() object."""
     self.tbicon.RemoveIcon()
-    wx.Frame.Close(self)
+    self.Destroy()
+    
+  def _FrameClosed(self, event):
+    """Event hander for handling the frame closure event.  We call our
+    customized Close() function."""
+    self.Close()
+    return True
 
-  def _TaskBarMenuItemShowSelected(self, event):
-    """Event handler for selection of the TaskBarMenu's 'Show...'
-    item.  Displays this frame."""
-    self.Show(True)
+  def _FrameIconized(self, event):
+    self.Show(not event.Iconized())
+    return True
+  
+  def _TaskBarLeftClick(self, event):
+    """Event handler for a left-click on the taskbar icon.  If the
+    frame is iconized(), restore and show it().  Otherwise, iconize
+    and hide."""
+    if self.IsIconized():
+      self.Show(True)
+      self.Iconize(False)
+    else:
+      self.Iconize(True)
+      self.Show(False)
     return True
 
   def _TaskBarMenuItemToggleSelected(self, event):
