@@ -38,25 +38,21 @@ class TaskBarIcon(wx.TaskBarIcon):
   def CreatePopupMenu(self):
     """Called when the user invokes the popup menu (that is,
     right-clicks on the taskbar icon)."""
-    
     self.PopupMenu(self.popup_menu)
     
   def _SetAlert(self, alert=True):
     """Ensure that the local alert state is set to ALERT, updating the
     icon if necessary."""
-    
     if bool(alert) != self.alert:
       self.alert = bool(alert)
       self._UpdateIcon()
 
   def _GetAlert(self):
     """Return the local alert state."""
-    
     return self.alert
       
   def _UpdateIcon(self):
     """Update the icon bitmap based on the current alert state."""
-    
     if self.alert:
       self.SetIcon(wx.Icon("tbicon-alert.xpm", wx.BITMAP_TYPE_XPM))
     else:
@@ -68,7 +64,6 @@ class TaskBarTopFrame(wx.Frame):
 
   def __init__(self, title, resources):
     self.resources = resources
-    
     wx.Frame.__init__(self, None, -1, title, size=(100, 100),
                       style=wx.FRAME_NO_TASKBAR|wx.NO_FULL_REPAINT_ON_RESIZE)
 
@@ -88,28 +83,24 @@ class TaskBarTopFrame(wx.Frame):
   def Close(self):
     """Overrides wx.Frame.Close() to ensure that we remove the icon
     installed by the TaskBarIcon() object."""
-  
     self.tbicon.RemoveIcon()
     wx.Frame.Close(self)
 
   def _TaskBarMenuItemShowSelected(self, event):
     """Event handler for selection of the TaskBarMenu's 'Show...'
     item.  Displays this frame."""
-    
     self.Show(True)
     return True
 
   def _TaskBarMenuItemToggleSelected(self, event):
     """Event handler for selection of the TaskBarMenu's 'Toggle...'
     item.  Toggles the icon alertness state."""
-    
     self.tbicon._SetAlert(not self.tbicon._GetAlert())
     return True
 
   def _TaskBarMenuItemExitSelected(self, event):
     """Event handler for selection of the TaskBarMenu's 'Exit...'
     item.  Closes down this frame."""
-    
     self.Close()
     return True
 
