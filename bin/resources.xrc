@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<resource>
+  <object class="wxMenu" name="TaskBarPopupMenu">
+    <label>Recurrence</label>
+    <style></style>
+    <object class="wxMenuItem" name="TaskBarMenuItemShow">
+      <label>&amp;Show Events</label>
+      <help>Show Recurrence main events dialog</help>
+    </object>
+    <object class="wxMenuItem" name="TaskBarMenuItemToggle">
+      <label>&amp;Toggle Icon State</label>
+      <help>Toggle the alert state of the icon.  (For debugging.)</help>
+    </object>
+    <object class="separator"/>
+    <object class="wxMenuItem" name="TaskBarMenuItemExit">
+      <label>&amp;Exit Recurrence</label>
+      <help>Close and exit the Recurrence program.</help>
+    </object>
+  </object>
+</resource>
