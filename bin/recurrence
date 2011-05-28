@@ -17,188 +17,9 @@
 
 import sys
 import os
-try:
-  import recurrence_lib
-except ImportError: 
-  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), ".."))
-  import recurrence_lib
-import datetime
 import wx
 import wx.xrc
-
-
-class TaskBarIcon(wx.TaskBarIcon):
-  """Recurrence taskbar icon manager."""
-
-  def __init__(self, popup_menu):
-    wx.TaskBarIcon.__init__(self)
-    self.alert = False
-    self.popup_menu = popup_menu
-    self._UpdateIcon()
-
-  def CreatePopupMenu(self):
-    """Called when the user invokes the popup menu (that is,
-    right-clicks on the taskbar icon)."""
-    self.PopupMenu(self.popup_menu)
-    
-  def _SetAlert(self, alert=True):
-    """Ensure that the local alert state is set to ALERT, updating the
-    icon if necessary."""
-    if bool(alert) != self.alert:
-      self.alert = bool(alert)
-      self._UpdateIcon()
-
-  def _GetAlert(self):
-    """Return the local alert state."""
-    return self.alert
-      
-  def _UpdateIcon(self):
-    """Update the icon bitmap based on the current alert state."""
-    if self.alert:
-      self.SetIcon(wx.Icon("tbicon-alert.xpm", wx.BITMAP_TYPE_XPM))
-    else:
-      self.SetIcon(wx.Icon("tbicon-normal.xpm", wx.BITMAP_TYPE_XPM))
-   
-
-class AppFrame(wx.Frame):
-  """Recurrence primary task-bar frame."""
-
-  def __init__(self, title, resources, datafile):
-    self.resources = resources
-    if os.path.exists(datafile) and os.path.isfile(datafile):
-      self.definitions, self.occurrences = \
-        recurrence_lib.storage.read_data_file(datafile)
-    else:
-      self.definitions = []
-      self.occurrences = []
-    
-    wx.Frame.__init__(self, None, -1, title, size=(400, 400)),
-
-    # Create the taskbar popup window, and register event handlers.
-    self.popup = self.resources.LoadMenu('TaskBarPopupMenu')
-    wx.EVT_MENU(self.popup,
-                self.resources.GetXRCID('TaskBarMenuItemToggle'),
-                self._TaskBarMenuItemToggleSelected)
-    wx.EVT_MENU(self.popup,
-                self.resources.GetXRCID('TaskBarMenuItemExit'),
-                self._TaskBarMenuItemExitSelected)
-
-    # Instantiate the taskbar icon, and register event handlers.
-    self.tbicon = TaskBarIcon(self.popup)
-    wx.EVT_TASKBAR_LEFT_DOWN(self.tbicon, self._TaskBarLeftClick)
-
-    # Add the main panel to the frame.
-    panel = self.resources.LoadPanel(self, 'AppFramePanel')
-    sizer = wx.FlexGridSizer(1, 1)
-    sizer.AddGrowableCol(0)
-    sizer.AddGrowableRow(0)
-    sizer.Add(panel, flag=wx.EXPAND)
-    self.SetSizer(sizer)
-
-    # Register frame-specific event handers.
-    wx.EVT_CLOSE(self, self._FrameClosed)
-    wx.EVT_ICONIZE(self, self._FrameIconized)
-
-    # Populate the ListCtrl.
-    self.entrylist = self.FindWindowById(self.resources.GetXRCID('EntryList'))
-    self.entrylist.InsertColumn(0, "Date")
-    self.entrylist.InsertColumn(1, "Description")
-    self.entrylist.InsertColumn(2, "Recurrence")
-
-    def _cmp_date(a, b):
-      if a.get_date() < b.get_date():
-        return -1
-      if a.get_date() > b.get_date():
-        return 1
-      return cmp(a.get_definition().get_description(),
-                 b.get_definition().get_description())
-    
-    def unparse_date(date):
-      if date is None:
-        return ''
-      else:
-        return "%d-%02d-%02d" % (date.year, date.month, date.day)
-    occs = recurrence_lib.events._get_past_occurrences(self.definitions,
-                                                       self.occurrences,
-                                                       datetime.date.today())
-    occs.sort(_cmp_date)
-    for occ in occs:
-      datestr = unparse_date(occ.get_date())
-      desc = occ.get_definition().get_description()
-      rec = occ.get_definition().get_recurrence()
-      if rec:
-        rec = recurrence_lib.events.period_to_string(rec.get_period())
-      else:
-        rec = ""
-      count = self.entrylist.GetItemCount()
-      idx = self.entrylist.InsertStringItem(count, datestr)
-      self.entrylist.SetStringItem(idx, 1, desc)
-      self.entrylist.SetStringItem(idx, 2, rec)
-
-    occs = recurrence_lib.events._get_future_occurrences(self.definitions,
-                                                         self.occurrences,
-                                                         datetime.date.today(),
-                                                         30)
-    occs.sort(_cmp_date)
-    for occ in occs:
-      datestr = unparse_date(occ.get_date())
-      desc = occ.get_definition().get_description()
-      rec = occ.get_definition().get_recurrence()
-      if rec:
-        rec = recurrence_lib.events.period_to_string(rec.get_period())
-      else:
-        rec = ""
-      count = self.entrylist.GetItemCount()
-      idx = self.entrylist.InsertStringItem(count, datestr)
-      self.entrylist.SetStringItem(idx, 1, desc)
-      self.entrylist.SetStringItem(idx, 2, rec)
-
-    self.entrylist.SetColumnWidth(0, wx.LIST_AUTOSIZE)
-    self.entrylist.SetColumnWidth(1, wx.LIST_AUTOSIZE)
-    self.entrylist.SetColumnWidth(2, wx.LIST_AUTOSIZE)
-    
-    # Show this frame.
-    self.Show()
-
-  def Close(self):
-    """Overrides wx.Frame.Close() to ensure that we remove the icon
-    installed by the TaskBarIcon() object."""
-    self.tbicon.RemoveIcon()
-    self.Destroy()
-
-  def _FrameClosed(self, event):
-    """Event hander for handling the frame closure event.  We call our
-    customized Close() function."""
-    self.Close()
-    return True
-
-  def _FrameIconized(self, event):
-    self.Show(not event.Iconized())
-    return True
-  
-  def _TaskBarLeftClick(self, event):
-    """Event handler for a left-click on the taskbar icon.  If the
-    frame is iconized(), restore and show it().  Otherwise, iconize
-    and hide."""
-    if self.IsIconized():
-      self.Show(True)
-      self.Iconize(False)
-    else:
-      self.Iconize(True)
-      self.Show(False)
-    return True
-
-  def _TaskBarMenuItemToggleSelected(self, event):
-    """Event handler for selection of the TaskBarMenu's 'Toggle...'
-    item.  Toggles the icon alertness state."""
-    self.tbicon._SetAlert(not self.tbicon._GetAlert())
-    return True
-
-  def _TaskBarMenuItemExitSelected(self, event):
-    """Event handler for selection of the TaskBarMenu's 'Exit...'
-    item.  Closes down this frame."""
-    self.Close()
-    return True
+import recurrence_ui
 
 
 class RecurrenceApp(wx.App):
@@ -210,9 +31,10 @@ class RecurrenceApp(wx.App):
     
   def OnInit(self):
     """Called when the application is being initialed."""
-    self.resources = wx.xrc.XmlResource('resources.xrc')
-    self.frame = AppFrame("Recurrence", self.resources, self.datafile)
-    self.SetTopWindow(self.frame)
+    frame = wx.xrc.XmlResource('resources.xrc').LoadFrame(None, 'MainFrame')
+    self.SetTopWindow(frame)
+    frame.Show()
+    frame.RegisterDatafile(self.datafile)
     return True
 
 
