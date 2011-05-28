@@ -20,8 +20,8 @@
       <growablerows>0</growablerows>
       <growablecols>0</growablecols>
       <object class="sizeritem">
-        <object class="wxListCtrl">
-          <style>wxLC_REPORT|wxLC_HRULES</style>
+        <object class="wxListCtrl" name="EntryList">
+          <style>wxLC_REPORT|wxLC_HRULES|wxSUNKEN_BORDER</style>
         </object>
         <flag>wxALL|wxEXPAND</flag>
         <border>5</border>

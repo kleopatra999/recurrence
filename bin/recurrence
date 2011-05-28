@@ -22,6 +22,7 @@ try:
 except ImportError: 
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), ".."))
   import recurrence_lib
+import datetime
 import wx
 import wx.xrc
 
@@ -58,12 +59,19 @@ class TaskBarIcon(wx.TaskBarIcon):
     else:
       self.SetIcon(wx.Icon("tbicon-normal.xpm", wx.BITMAP_TYPE_XPM))
    
-    
+
 class AppFrame(wx.Frame):
   """Recurrence primary task-bar frame."""
 
-  def __init__(self, title, resources):
+  def __init__(self, title, resources, datafile):
     self.resources = resources
+    if os.path.exists(datafile) and os.path.isfile(datafile):
+      self.definitions, self.occurrences = \
+        recurrence_lib.storage.read_data_file(datafile)
+    else:
+      self.definitions = []
+      self.occurrences = []
+    
     wx.Frame.__init__(self, None, -1, title, size=(400, 400)),
 
     # Create the taskbar popup window, and register event handlers.
@@ -90,6 +98,64 @@ class AppFrame(wx.Frame):
     # Register frame-specific event handers.
     wx.EVT_CLOSE(self, self._FrameClosed)
     wx.EVT_ICONIZE(self, self._FrameIconized)
+
+    # Populate the ListCtrl.
+    self.entrylist = self.FindWindowById(self.resources.GetXRCID('EntryList'))
+    self.entrylist.InsertColumn(0, "Date")
+    self.entrylist.InsertColumn(1, "Description")
+    self.entrylist.InsertColumn(2, "Recurrence")
+
+    def _cmp_date(a, b):
+      if a.get_date() < b.get_date():
+        return -1
+      if a.get_date() > b.get_date():
+        return 1
+      return cmp(a.get_definition().get_description(),
+                 b.get_definition().get_description())
+    
+    def unparse_date(date):
+      if date is None:
+        return ''
+      else:
+        return "%d-%02d-%02d" % (date.year, date.month, date.day)
+    occs = recurrence_lib.events._get_past_occurrences(self.definitions,
+                                                       self.occurrences,
+                                                       datetime.date.today())
+    occs.sort(_cmp_date)
+    for occ in occs:
+      datestr = unparse_date(occ.get_date())
+      desc = occ.get_definition().get_description()
+      rec = occ.get_definition().get_recurrence()
+      if rec:
+        rec = recurrence_lib.events.period_to_string(rec.get_period())
+      else:
+        rec = ""
+      count = self.entrylist.GetItemCount()
+      idx = self.entrylist.InsertStringItem(count, datestr)
+      self.entrylist.SetStringItem(idx, 1, desc)
+      self.entrylist.SetStringItem(idx, 2, rec)
+
+    occs = recurrence_lib.events._get_future_occurrences(self.definitions,
+                                                         self.occurrences,
+                                                         datetime.date.today(),
+                                                         30)
+    occs.sort(_cmp_date)
+    for occ in occs:
+      datestr = unparse_date(occ.get_date())
+      desc = occ.get_definition().get_description()
+      rec = occ.get_definition().get_recurrence()
+      if rec:
+        rec = recurrence_lib.events.period_to_string(rec.get_period())
+      else:
+        rec = ""
+      count = self.entrylist.GetItemCount()
+      idx = self.entrylist.InsertStringItem(count, datestr)
+      self.entrylist.SetStringItem(idx, 1, desc)
+      self.entrylist.SetStringItem(idx, 2, rec)
+
+    self.entrylist.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+    self.entrylist.SetColumnWidth(1, wx.LIST_AUTOSIZE)
+    self.entrylist.SetColumnWidth(2, wx.LIST_AUTOSIZE)
     
     # Show this frame.
     self.Show()
@@ -99,7 +165,7 @@ class AppFrame(wx.Frame):
     installed by the TaskBarIcon() object."""
     self.tbicon.RemoveIcon()
     self.Destroy()
-    
+
   def _FrameClosed(self, event):
     """Event hander for handling the frame closure event.  We call our
     customized Close() function."""
@@ -138,19 +204,20 @@ class AppFrame(wx.Frame):
 class RecurrenceApp(wx.App):
   """Recurrence wxApp object."""
   
-  def __init__(self):
+  def __init__(self, datafile):
+    self.datafile = datafile
     wx.App.__init__(self)
     
   def OnInit(self):
     """Called when the application is being initialed."""
     self.resources = wx.xrc.XmlResource('resources.xrc')
-    self.frame = AppFrame("Recurrence", self.resources)
+    self.frame = AppFrame("Recurrence", self.resources, self.datafile)
     self.SetTopWindow(self.frame)
     return True
 
 
 def main():
-  app = RecurrenceApp()
+  app = RecurrenceApp(sys.argv[1])
   app.MainLoop()
 
 
