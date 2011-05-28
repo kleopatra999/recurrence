@@ -32,80 +32,84 @@ import wx
 import wx.xrc
 
 
+def _cmp_occurrence_by_date(a, b):
+  """Sorting function for EventOccurrence objects, by date, then by
+  description."""
+  if a.get_date() < b.get_date():
+    return -1
+  if a.get_date() > b.get_date():
+    return 1
+  return cmp(a.get_definition().get_description(),
+             b.get_definition().get_description())
+
+
 class RecurrenceEventListCtrl(wx.ListCtrl):
+  """Subclass wxListCtrl widget responsible for displaying and
+  interacting with Recurrence events."""
+  
   def __init__(self):
     pre = wx.PreListCtrl()
-    # the Create step is done later by XRC.
     self.PostCreate(pre)
     self.Bind(wx.EVT_WINDOW_CREATE, self.OnCreate)
 
   def OnCreate(self, event):
-    self.Unbind(wx.EVT_WINDOW_CREATE)
-    # Do all extra initialization here    
+    """Event handler for window creation event."""
 
+    # No need to listen for window creation events now.
+    self.Unbind(wx.EVT_WINDOW_CREATE)
+
+    # Let's get some columns in place, shall we?
     self.InsertColumn(0, "Date")
     self.InsertColumn(1, "Description")
     self.InsertColumn(2, "Recurrence")
 
   def RegisterDatafile(self, datafile):
-    if os.path.exists(datafile) and os.path.isfile(datafile):
-      self.definitions, self.occurrences = \
+    """Register DATAFILE with the application as the source of event
+    information. """
+    self.definitions, self.occurrences = \
         recurrence_lib.storage.read_data_file(datafile)
-    else:
-      self.definitions = []
-      self.occurrences = []
+    self.RefreshEventList()
 
-    def _cmp_date(a, b):
-      if a.get_date() < b.get_date():
-        return -1
-      if a.get_date() > b.get_date():
-        return 1
-      return cmp(a.get_definition().get_description(),
-                 b.get_definition().get_description())
-    
+  def RefreshEventList(self):
+    """Refresh the event listing, in full."""
+    self.DeleteAllItems()
+    occs = recurrence_lib.events._get_past_occurrences(self.definitions,
+                                                       self.occurrences,
+                                                       datetime.date.today())
+    occs.sort(_cmp_occurrence_by_date)
+    for occ in occs:
+      self._AppendEventToList(occ, True)
+    occs = recurrence_lib.events._get_future_occurrences(self.definitions,
+                                                         self.occurrences,
+                                                         datetime.date.today(),
+                                                         30)
+    occs.sort(_cmp_occurrence_by_date)
+    for occ in occs:
+      self._AppendEventToList(occ, False)
+    self.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+    self.SetColumnWidth(1, wx.LIST_AUTOSIZE)
+    self.SetColumnWidth(2, wx.LIST_AUTOSIZE)
+
+  def _AppendEventToList(self, occurrence, past=False):
+    """Append EventOccurrence OCCURRENCE to the end of the list."""
+
     def unparse_date(date):
       if date is None:
         return ''
       else:
         return "%d-%02d-%02d" % (date.year, date.month, date.day)
-    occs = recurrence_lib.events._get_past_occurrences(self.definitions,
-                                                       self.occurrences,
-                                                       datetime.date.today())
-    occs.sort(_cmp_date)
-    for occ in occs:
-      datestr = unparse_date(occ.get_date())
-      desc = occ.get_definition().get_description()
-      rec = occ.get_definition().get_recurrence()
-      if rec:
-        rec = recurrence_lib.events.period_to_string(rec.get_period())
-      else:
-        rec = ""
-      count = self.GetItemCount()
-      idx = self.InsertStringItem(count, datestr)
-      self.SetStringItem(idx, 1, desc)
-      self.SetStringItem(idx, 2, rec)
-
-    occs = recurrence_lib.events._get_future_occurrences(self.definitions,
-                                                         self.occurrences,
-                                                         datetime.date.today(),
-                                                         30)
-    occs.sort(_cmp_date)
-    for occ in occs:
-      datestr = unparse_date(occ.get_date())
-      desc = occ.get_definition().get_description()
-      rec = occ.get_definition().get_recurrence()
-      if rec:
-        rec = recurrence_lib.events.period_to_string(rec.get_period())
-      else:
-        rec = ""
-      count = self.GetItemCount()
-      idx = self.InsertStringItem(count, datestr)
-      self.SetStringItem(idx, 1, desc)
-      self.SetStringItem(idx, 2, rec)
-
-    self.SetColumnWidth(0, wx.LIST_AUTOSIZE)
-    self.SetColumnWidth(1, wx.LIST_AUTOSIZE)
-    self.SetColumnWidth(2, wx.LIST_AUTOSIZE)
+    
+    datestr = unparse_date(occurrence.get_date())
+    desc = occurrence.get_definition().get_description()
+    rec = occurrence.get_definition().get_recurrence()
+    if rec:
+      rec = recurrence_lib.events.period_to_string(rec.get_period())
+    else:
+      rec = ""
+    idx = self.InsertStringItem(self.GetItemCount(), datestr)
+    self.SetStringItem(idx, 1, desc)
+    self.SetStringItem(idx, 2, rec)
+    self.SetItemTextColour(idx, wx.Colour(past and 255 or 0, 0, 0))
 
 
 class RecurrenceTaskBarIcon(wx.TaskBarIcon):
@@ -145,12 +149,13 @@ class RecurrenceMainFrame(wx.Frame):
   """Recurrence primary task-bar frame."""
 
   def __init__(self):
-    # the Create step is done later by XRC.
     pre = wx.PreFrame()
     self.PostCreate(pre)
     self.Bind(wx.EVT_WINDOW_CREATE, self.OnCreate)
 
   def OnCreate(self, event):
+    """Event handler for window creation event."""
+    
     # No need to listen for window creation events now.
     self.Unbind(wx.EVT_WINDOW_CREATE)
 
@@ -176,7 +181,16 @@ class RecurrenceMainFrame(wx.Frame):
 
   def RegisterDatafile(self, datafile):
     entrylist = self.FindWindowByName('EventList')
-    entrylist.RegisterDatafile(datafile)
+    try:
+      entrylist.RegisterDatafile(datafile)
+    except Exception, e:
+      dlg = wx.MessageDialog(self,
+                             "Error reading data file '%s': %s"
+                             % (datafile, str(e)),
+                             "Data File Error",
+                             wx.OK | wx.ICON_ERROR)
+      dlg.ShowModal()
+      self.Close()
 
   def Close(self):
     """Overrides wx.Frame.Close() to ensure that we remove the icon
