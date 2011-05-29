@@ -40,7 +40,15 @@ def get_resources():
   except:
     RESOURCES_XRC = 'resources.xrc'
   return wx.xrc.XmlResource(RESOURCES_XRC)
-    
+
+
+def get_icon_path(icon_name):
+  """Return the path of the icon named ICON_NAME."""
+  try:
+    return os.path.join(os.path.dirname(__file__), icon_name)
+  except:
+    return icon_name
+
 
 def _cmp_occurrence_by_date(a, b):
   """Sorting function for EventOccurrence objects, by date, then by
@@ -150,9 +158,11 @@ class RecurrenceTaskBarIcon(wx.TaskBarIcon):
   def _UpdateIcon(self):
     """Update the icon bitmap based on the current alert state."""
     if self.alert:
-      self.SetIcon(wx.Icon("tbicon-alert.xpm", wx.BITMAP_TYPE_XPM))
+      self.SetIcon(wx.Icon(get_icon_path("tbicon-alert.xpm"),
+                           wx.BITMAP_TYPE_XPM))
     else:
-      self.SetIcon(wx.Icon("tbicon-normal.xpm", wx.BITMAP_TYPE_XPM))
+      self.SetIcon(wx.Icon(get_icon_path("tbicon-normal.xpm"),
+                           wx.BITMAP_TYPE_XPM))
    
 
 class RecurrenceMainFrame(wx.Frame):
