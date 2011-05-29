@@ -32,6 +32,16 @@ import wx
 import wx.xrc
 
 
+def get_resources():
+  """Return the wx.xrc.XmlResource object contain resources for this
+  program."""
+  try:
+    RESOURCES_XRC = os.path.join(os.path.dirname(__file__), 'resources.xrc')
+  except:
+    RESOURCES_XRC = 'resources.xrc'
+  return wx.xrc.XmlResource(RESOURCES_XRC)
+    
+
 def _cmp_occurrence_by_date(a, b):
   """Sorting function for EventOccurrence objects, by date, then by
   description."""
@@ -160,7 +170,7 @@ class RecurrenceMainFrame(wx.Frame):
     self.Unbind(wx.EVT_WINDOW_CREATE)
 
     # We need the XML resources.
-    self.resources = wx.xrc.XmlResource('resources.xrc')
+    self.resources = get_resources()
    
     # Create the taskbar popup window, and register event handlers.
     self.popup = self.resources.LoadMenu('TaskBarPopupMenu')

@@ -31,7 +31,7 @@ class RecurrenceApp(wx.App):
     
   def OnInit(self):
     """Called when the application is being initialed."""
-    frame = wx.xrc.XmlResource('resources.xrc').LoadFrame(None, 'MainFrame')
+    frame = recurrence_ui.get_resources().LoadFrame(None, 'MainFrame')
     self.SetTopWindow(frame)
     frame.Show()
     frame.RegisterDatafile(self.datafile)
