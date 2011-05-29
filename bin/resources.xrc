@@ -23,7 +23,7 @@
         <growablecols>0</growablecols>
         <object class="sizeritem">
           <object class="wxListCtrl" name="EventList" subclass="recurrence_ui.RecurrenceEventListCtrl">
-            <style>wxLC_REPORT|wxLC_HRULES|wxSUNKEN_BORDER</style>
+            <style>wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_HRULES|wxSUNKEN_BORDER</style>
           </object>
           <flag>wxALL|wxEXPAND</flag>
           <border>5</border>
@@ -51,5 +51,6 @@
         </object>
       </object>
     </object>
+    <style>wxDEFAULT_FRAME_STYLE</style>
   </object>
 </resource>

@@ -71,7 +71,7 @@ class RecurrenceEventListCtrl(wx.ListCtrl):
     # Let's get some columns in place, shall we?
     self.InsertColumn(0, "Date")
     self.InsertColumn(1, "Description")
-    self.InsertColumn(2, "Recurrence")
+    self.InsertColumn(2, "Occurs")
 
   def RegisterDatafile(self, datafile):
     """Register DATAFILE with the application as the source of event
@@ -115,7 +115,7 @@ class RecurrenceEventListCtrl(wx.ListCtrl):
     if rec:
       rec = recurrence_lib.events.period_to_string(rec.get_period())
     else:
-      rec = ""
+      rec = 'once'
     idx = self.InsertStringItem(self.GetItemCount(), datestr)
     self.SetStringItem(idx, 1, desc)
     self.SetStringItem(idx, 2, rec)
