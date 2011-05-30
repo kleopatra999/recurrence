@@ -28,6 +28,7 @@ except ImportError:
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), ".."))
   import recurrence_lib
 import datetime
+import time
 import wx
 import wx.xrc
 
@@ -69,6 +70,8 @@ class RecurrenceEventListCtrl(wx.ListCtrl):
     pre = wx.PreListCtrl()
     self.PostCreate(pre)
     self.Bind(wx.EVT_WINDOW_CREATE, self.OnCreate)
+    self.num_past_events = 0
+    self.num_future_events = 0
 
   def OnCreate(self, event):
     """Event handler for window creation event."""
@@ -86,27 +89,36 @@ class RecurrenceEventListCtrl(wx.ListCtrl):
     information. """
     self.definitions, self.occurrences = \
         recurrence_lib.storage.read_data_file(datafile)
-    self.RefreshEventList()
+    self.RefreshEventList(time.time())
 
-  def RefreshEventList(self):
-    """Refresh the event listing, in full."""
+  def RefreshEventList(self, now_time):
+    """Refresh the event listing, in full, using NOW_TIME to dilineate
+    past and future events."""
+
+    now_date = datetime.date.fromtimestamp(now_time)
     self.DeleteAllItems()
     occs = recurrence_lib.events._get_past_occurrences(self.definitions,
                                                        self.occurrences,
-                                                       datetime.date.today())
+                                                       now_date)
+    self.num_past_events = len(occs)
     occs.sort(_cmp_occurrence_by_date)
     for occ in occs:
       self._AppendEventToList(occ, True)
     occs = recurrence_lib.events._get_future_occurrences(self.definitions,
                                                          self.occurrences,
-                                                         datetime.date.today(),
-                                                         30)
+                                                         now_date, 60)
+    self.num_future_events = len(occs)
     occs.sort(_cmp_occurrence_by_date)
     for occ in occs:
       self._AppendEventToList(occ, False)
     self.SetColumnWidth(0, wx.LIST_AUTOSIZE)
     self.SetColumnWidth(1, wx.LIST_AUTOSIZE)
     self.SetColumnWidth(2, wx.LIST_AUTOSIZE)
+
+  def GetEventCounts(self):
+    """Return a 2-tuple containing the number of past and future
+    events shown."""
+    return self.num_past_events, self.num_future_events
 
   def _AppendEventToList(self, occurrence, past=False):
     """Append EventOccurrence OCCURRENCE to the end of the list."""
