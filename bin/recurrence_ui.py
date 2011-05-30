@@ -184,6 +184,7 @@ class RecurrenceMainFrame(wx.Frame):
     pre = wx.PreFrame()
     self.PostCreate(pre)
     self.Bind(wx.EVT_WINDOW_CREATE, self.OnCreate)
+    self.last_updated = None
 
     # We need the XML resources.
     self.resources = get_resources()
@@ -220,7 +221,30 @@ class RecurrenceMainFrame(wx.Frame):
     wx.EVT_CLOSE(self, self._FrameClosed)
     wx.EVT_ICONIZE(self, self._FrameIconized)
 
+    # Register events for our button(s).
+    wx.EVT_BUTTON(self,
+                  self._WindowId('ClearButton'),
+                  self._ClearButtonActivated)
+    wx.EVT_BUTTON(self,
+                  self._WindowId('UpdateButton'),
+                  self._UpdateButtonActivated)
+
+    # TEMPORARY: Grey out the 'Clear' button.
+    self.FindWindowById(self._WindowId('ClearButton')).Enable(False)
+
+    # Create the status bar.
+    self.CreateStatusBar(number=2,
+                         name='StatusBar')
+    self.SetStatusWidths([300, -1])
+
+    # Create a timer to use for automatic updates, and register an
+    # event listener for it.
+    self.timer = wx.Timer(self)
+    self.timer.Start(60 * 60 * 1000, wx.TIMER_CONTINUOUS)
+    self.Bind(wx.EVT_TIMER, self._TimerNotification)
+
   def RegisterDatafile(self, datafile):
+    """Register DATAFILE as the Recurrence data file to consult and use."""
     entrylist = self.FindWindowByName('EventList')
     try:
       entrylist.RegisterDatafile(datafile)
@@ -232,12 +256,24 @@ class RecurrenceMainFrame(wx.Frame):
                              wx.OK | wx.ICON_ERROR)
       dlg.ShowModal()
       self.Close()
+    self.UpdateEventList()
 
   def Close(self):
     """Overrides wx.Frame.Close() to ensure that we remove the icon
     installed by the RecurrenceTaskBarIcon() object."""
     self.tbicon.RemoveIcon()
     self.Destroy()
+
+  def UpdateEventList(self):
+    """Update the event list, and perform related UI magic."""
+    now_time = time.time()
+    entrylist = self.FindWindowByName('EventList')
+    entrylist.RefreshEventList(now_time)
+    past_count, future_count = entrylist.GetEventCounts()
+    self.SetStatusText("Last Updated: %s"
+                       % (time.asctime(time.localtime(now_time))),
+                       0)
+    self.SetStatusText("%d past, %d future" % (past_count, future_count), 1)
 
   def _WindowId(self, window_name):
     """Return the ID of the Window named WINDOW_NAME."""
@@ -275,4 +311,15 @@ class RecurrenceMainFrame(wx.Frame):
     """Event handler for selection of the TaskBarMenu's 'Exit...'
     item.  Closes down this frame."""
     self.Close()
+    return True
+
+  def _ClearButtonActivated(self, event):
+    return True
+
+  def _UpdateButtonActivated(self, event):
+    self.UpdateEventList()
+    return True
+
+  def _TimerNotification(self, event):
+    self.UpdateEventList()
     return True
