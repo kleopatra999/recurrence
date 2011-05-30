@@ -185,22 +185,31 @@ class RecurrenceMainFrame(wx.Frame):
     self.PostCreate(pre)
     self.Bind(wx.EVT_WINDOW_CREATE, self.OnCreate)
 
+    # We need the XML resources.
+    self.resources = get_resources()
+
+    # Keep a mapping of window names to ids for convenience.
+    self.window_ids = {}
+    for window_name in ['TaskBarMenuItemToggle',
+                        'TaskBarMenuItemExit',
+                        'ClearButton',
+                        'UpdateButton',
+                        ]:
+      self.window_ids[window_name] = self.resources.GetXRCID(window_name)
+
   def OnCreate(self, event):
     """Event handler for window creation event."""
     
     # No need to listen for window creation events now.
     self.Unbind(wx.EVT_WINDOW_CREATE)
 
-    # We need the XML resources.
-    self.resources = get_resources()
-   
     # Create the taskbar popup window, and register event handlers.
     self.popup = self.resources.LoadMenu('TaskBarPopupMenu')
     wx.EVT_MENU(self.popup,
-                self.resources.GetXRCID('TaskBarMenuItemToggle'),
+                self._WindowId('TaskBarMenuItemToggle'),
                 self._TaskBarMenuItemToggleSelected)
     wx.EVT_MENU(self.popup,
-                self.resources.GetXRCID('TaskBarMenuItemExit'),
+                self._WindowId('TaskBarMenuItemExit'),
                 self._TaskBarMenuItemExitSelected)
 
     # Instantiate the taskbar icon, and register event handlers.
@@ -229,6 +238,10 @@ class RecurrenceMainFrame(wx.Frame):
     installed by the RecurrenceTaskBarIcon() object."""
     self.tbicon.RemoveIcon()
     self.Destroy()
+
+  def _WindowId(self, window_name):
+    """Return the ID of the Window named WINDOW_NAME."""
+    return self.window_ids.get(window_name)
 
   def _FrameClosed(self, event):
     """Event hander for handling the frame closure event.  We call our
