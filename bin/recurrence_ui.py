@@ -200,6 +200,7 @@ class RecurrenceMainFrame(wx.Frame):
     for window_name in ['TaskBarMenuItemToggle',
                         'TaskBarMenuItemExit',
                         'ClearButton',
+                        'EventList',                        
                         'UpdateButton',
                         ]:
       self.window_ids[window_name] = self.resources.GetXRCID(window_name)
@@ -213,10 +214,10 @@ class RecurrenceMainFrame(wx.Frame):
     # Create the taskbar popup window, and register event handlers.
     self.popup = self.resources.LoadMenu('TaskBarPopupMenu')
     wx.EVT_MENU(self.popup,
-                self._WindowId('TaskBarMenuItemToggle'),
+                self._GetWindowId('TaskBarMenuItemToggle'),
                 self._TaskBarMenuItemToggleSelected)
     wx.EVT_MENU(self.popup,
-                self._WindowId('TaskBarMenuItemExit'),
+                self._GetWindowId('TaskBarMenuItemExit'),
                 self._TaskBarMenuItemExitSelected)
 
     # Instantiate the taskbar icon, and register event handlers.
@@ -229,14 +230,14 @@ class RecurrenceMainFrame(wx.Frame):
 
     # Register events for our button(s).
     wx.EVT_BUTTON(self,
-                  self._WindowId('ClearButton'),
+                  self._GetWindowId('ClearButton'),
                   self._ClearButtonActivated)
     wx.EVT_BUTTON(self,
-                  self._WindowId('UpdateButton'),
+                  self._GetWindowId('UpdateButton'),
                   self._UpdateButtonActivated)
 
     # TEMPORARY: Grey out the 'Clear' button.
-    self.FindWindowById(self._WindowId('ClearButton')).Enable(False)
+    self.FindWindowById(self._GetWindowId('ClearButton')).Enable(False)
 
     # Create the status bar.
     self.CreateStatusBar(number=2,
@@ -251,7 +252,7 @@ class RecurrenceMainFrame(wx.Frame):
 
   def RegisterDatafile(self, datafile):
     """Register DATAFILE as the Recurrence data file to consult and use."""
-    entrylist = self.FindWindowByName('EventList')
+    entrylist = self._GetWindow('EventList')
     try:
       entrylist.RegisterDatafile(datafile)
     except Exception, e:
@@ -273,7 +274,7 @@ class RecurrenceMainFrame(wx.Frame):
   def UpdateEventList(self):
     """Update the event list, and perform related UI magic."""
     now_time = time.time()
-    entrylist = self.FindWindowByName('EventList')
+    entrylist = self._GetWindow('EventList')
     entrylist.RefreshEventList(now_time)
     past_count, future_count = entrylist.GetEventCounts()
     self.SetStatusText("Last Updated: %s"
@@ -281,10 +282,14 @@ class RecurrenceMainFrame(wx.Frame):
                        0)
     self.SetStatusText("%d past, %d future" % (past_count, future_count), 1)
 
-  def _WindowId(self, window_name):
+  def _GetWindowId(self, window_name):
     """Return the ID of the Window named WINDOW_NAME."""
     return self.window_ids.get(window_name)
 
+  def _GetWindow(self, window_name):
+    """Return the Window named WINDOW_NAME."""
+    return self.FindWindowById(self._GetWindowId(window_name))
+  
   def _FrameClosed(self, event):
     """Event hander for handling the frame closure event.  We call our
     customized Close() function."""
