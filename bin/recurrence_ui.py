@@ -33,14 +33,20 @@ import wx
 import wx.xrc
 
 
+# Global wx.xrc.XmlResource instance.
+resources = None
+
 def get_resources():
   """Return the wx.xrc.XmlResource object contain resources for this
   program."""
-  try:
-    RESOURCES_XRC = os.path.join(os.path.dirname(__file__), 'resources.xrc')
-  except:
-    RESOURCES_XRC = 'resources.xrc'
-  return wx.xrc.XmlResource(RESOURCES_XRC)
+  global resources
+  if resources is None:
+    try:
+      RESOURCES_XRC = os.path.join(os.path.dirname(__file__), 'resources.xrc')
+    except:
+      RESOURCES_XRC = 'resources.xrc'
+    resources = wx.xrc.XmlResource(RESOURCES_XRC)
+  return resources
 
 
 def get_icon_path(icon_name):
